@@ -65,8 +65,33 @@
         return [firstPage, ...remainingPages].flatMap(it => it.transactions);
     };
 
-    const toCSVFile = (walletName, baseCurrency, transactions) => {
+const toCSVFile = (walletName, baseCurrency, transactions) => {
         const headings = ['From Wallet', 'F_Source', 'To Wallet', 'T_Source', 'Date', 'Ignored?', 'Ign. Reason', 'Sent Amount', 'Sent Currency', 'Sent Cost Basis', 'Sent Cost Basis Currency', 'Received Amount', 'Received Currency', 'Received Cost Basis', 'Received Cost Basis Currency', 'Fee Amount', 'Fee Currency', 'Fee Value (EUR)', 'Net Worth Amount', 'Net Worth Currency', 'Gain' , 'Gain Currency', 'Type', 'Label', 'Cost Basis Method', 'Manual?', 'Missing Rates?', 'Missing Cost Basis?', 'Description', 'TxHash'];
+
+        /**
+         * Escaped ein einzelnes CSV-Feld gemäss RFC 4180.
+         * - Schliesst Felder in doppelte Anführungszeichen ein, wenn sie Kommas, Zeilenumbrüche oder doppelte Anführungszeichen enthalten.
+         * - Verdoppelt alle doppelten Anführungszeichen innerhalb des Feldes.
+         */
+        const escapeCSV = (field) => {
+            // Gibt einen leeren String für null oder undefined Werte zurück.
+            if (field === null || field === undefined) {
+                return '';
+            }
+            const str = String(field);
+
+            // Prüft, ob das Feld problematische Zeichen enthält.
+            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+                // Ersetzt jedes doppelte Anführungszeichen durch zwei doppelte Anführungszeichen.
+                const escapedStr = str.replace(/"/g, '""');
+                // Schliesst das gesamte Feld in doppelte Anführungszeichen ein.
+                return `"${escapedStr}"`;
+            }
+            
+            // Wenn keine problematischen Zeichen vorhanden sind, wird das Feld unverändert zurückgegeben.
+            return str;
+        };
+
         const transactionRows = transactions.map((t) =>
             [
                 t.from ? t.from.wallet.name : '',
@@ -99,7 +124,7 @@
                 t.manual ? t.manual : '',
                 t.description,
                 t.txhash,
-            ].join(',')
+            ].map(escapeCSV).join(',') // Wendet die escapeCSV-Funktion auf jedes Feld an.
         );
         const csv = [headings.join(','), ...transactionRows].join('\n');
         const hiddenElement = document.createElement('a');
