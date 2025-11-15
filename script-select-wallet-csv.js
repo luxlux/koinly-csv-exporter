@@ -66,7 +66,7 @@
     };
 
     const toCSVFile = (walletName, baseCurrency, transactions) => {
-        const headings = ['Date', 'Sent Amount', 'Sent Currency', 'Received Amount', 'Received Currency', 'Fee Amount', 'Fee Currency', 'Net Worth Amount', 'Net Worth Currency', 'Label', 'Description', 'TxHash'];
+        const headings = ['From Wallet', 'F_Source', 'To Wallet', 'T_Source', 'Date', 'Ignored?', 'Ign. Reason', 'Sent Amount', 'Sent Currency', 'Sent Cost Basis', 'Sent Cost Basis Currency', 'Received Amount', 'Received Currency', 'Received Cost Basis', 'Received Cost Basis Currency', 'Fee Amount', 'Fee Currency', 'Fee Value (EUR)', 'Net Worth Amount', 'Net Worth Currency', 'Gain' , 'Gain Currency', 'Type', 'Label', 'Cost Basis Method', 'Manual?', 'Missing Rates?', 'Missing Cost Basis?', 'Description', 'TxHash'];
         const transactionRows = transactions.map((t) =>
             [
                 t.date,
