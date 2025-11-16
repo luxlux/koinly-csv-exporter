@@ -1,5 +1,5 @@
 (function() {
-    // Dieser Wrapper stellt sicher, dass keine Variablen oder Funktionen in den globalen Scope der Seite gelangen.
+    // This wrapper ensures no variables or functions leak into the page's global scope.
 
     let wallets;
 
@@ -137,17 +137,28 @@ const toCSVFile = (walletName, baseCurrency, transactions) => {
         hiddenElement.click();
     };
 
+    const toJSONFile = (walletName, transactions) => {
+        // Creates a beautified JSON string with 2 spaces for indentation
+        const jsonString = JSON.stringify(transactions, null, 2);
+        const hiddenElement = document.createElement('a');
+        hiddenElement.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonString);
+        hiddenElement.target = '_blank';
+        hiddenElement.download = `${walletName} - Transactions.json`;
+        hiddenElement.click();
+    };
+
     function createUI() {
         const styles = `
             #koinly-exporter-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 10000; display: flex; justify-content: center; align-items: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-            #koinly-exporter-modal { background-color: #ffffff; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 5px 20px rgba(0,0,0,0.25); position: relative; }
+            #koinly-exporter-modal { background-color: #ffffff; padding: 25px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 5px 20px rgba(0,0,0,0.25); position: relative; }
             #koinly-exporter-modal h2 { margin: 0 0 20px 0; color: #333; }
             #koinly-exporter-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; }
             #koinly-exporter-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #e0e0e0; color: #333; }
             #koinly-exporter-list li:last-child { border-bottom: none; }
-            #koinly-exporter-list button { padding: 8px 12px; border: 1px solid #007bff; color: #007bff; background-color: white; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; font-weight: bold; flex-shrink: 0; margin-left: 15px; }
-            #koinly-exporter-list button:hover { background-color: #007bff; color: white; }
-            #koinly-exporter-list button:disabled { background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed; }
+            .koinly-exporter-btn-group { display: flex; gap: 8px; }
+            .koinly-exporter-btn-group button { padding: 8px 12px; border: 1px solid #007bff; color: #007bff; background-color: white; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; font-weight: bold; flex-shrink: 0; }
+            .koinly-exporter-btn-group button:hover { background-color: #007bff; color: white; }
+            .koinly-exporter-btn-group button:disabled { background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed; }
             #koinly-exporter-close-corner { position: absolute; top: 15px; right: 20px; font-size: 24px; color: #888; cursor: pointer; line-height: 1; user-select: none; }
             #koinly-exporter-footer { margin-top: 20px; text-align: center; }
             #koinly-exporter-close-btn { padding: 10px 20px; border: 1px solid #6c757d; color: #6c757d; background-color: white; border-radius: 5px; cursor: pointer; font-size: 16px; transition: all 0.2s ease; }
@@ -162,10 +173,10 @@ const toCSVFile = (walletName, baseCurrency, transactions) => {
         overlay.innerHTML = `
             <div id="koinly-exporter-modal">
                 <span id="koinly-exporter-close-corner">&times;</span>
-                <h2>Wallet-Transaktionen exportieren</h2>
-                <ul id="koinly-exporter-list"><li>Lade Wallets...</li></ul>
+                <h2>Export Wallet Transactions</h2>
+                <ul id="koinly-exporter-list"><li>Loading wallets...</li></ul>
                 <div id="koinly-exporter-footer">
-                    <button id="koinly-exporter-close-btn">Schließen</button>
+                    <button id="koinly-exporter-close-btn">Close</button>
                 </div>
             </div>
         `;
@@ -181,7 +192,7 @@ const toCSVFile = (walletName, baseCurrency, transactions) => {
 
     async function startExporter() {
         if (document.getElementById('koinly-exporter-overlay')) {
-            console.log("Exporter ist bereits geöffnet.");
+            console.log("Exporter is already open.");
             return;
         }
         
@@ -195,44 +206,68 @@ const toCSVFile = (walletName, baseCurrency, transactions) => {
             listElement.innerHTML = ''; 
 
             if (!wallets || wallets.length === 0) {
-                listElement.innerHTML = '<li>Keine Wallets gefunden.</li>';
+                listElement.innerHTML = '<li>No wallets found.</li>';
                 return;
             }
 
-            wallets.forEach((wallet, index) => {
+            const handleDownload = async (wallet, format, btn) => {
+                const originalText = btn.textContent;
+                btn.textContent = 'Loading...';
+                btn.disabled = true;
+                const allButtonsInGroup = btn.parentElement.querySelectorAll('button');
+                allButtonsInGroup.forEach(b => b.disabled = true);
+
+                try {
+                    console.log(`Starting download for wallet: ${wallet.name} (Format: ${format.toUpperCase()})`);
+                    const transactions = await getAllTransactions(wallet.id);
+
+                    if (format === 'csv') {
+                        toCSVFile(wallet.name, baseCurrency, transactions);
+                    } else if (format === 'json') {
+                        toJSONFile(wallet.name, transactions);
+                    }
+                    console.log(`Download for ${wallet.name} completed.`);
+                } catch (err) {
+                    console.error(`Error downloading for ${wallet.name}:`, err);
+                    alert(`An error occurred. Please check the console for details.`);
+                } finally {
+                    btn.textContent = originalText;
+                    allButtonsInGroup.forEach(b => b.disabled = false);
+                }
+            };
+
+            wallets.forEach((wallet) => {
                 const listItem = document.createElement('li');
+                
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = wallet.name;
-                const downloadBtn = document.createElement('button');
-                downloadBtn.textContent = 'Download CSV';
 
-                downloadBtn.onclick = async () => {
-                    downloadBtn.textContent = 'Lade...';
-                    downloadBtn.disabled = true;
-                    try {
-                        const transactions = await getAllTransactions(wallet.id);
-                        toCSVFile(wallet.name, baseCurrency, transactions);
-                    } catch (err) {
-                        console.error(`Fehler beim Download für ${wallet.name}:`, err);
-                        alert(`Ein Fehler ist aufgetreten. Prüfen Sie die Konsole für Details.`);
-                    } finally {
-                        downloadBtn.textContent = 'Download CSV';
-                        downloadBtn.disabled = false;
-                    }
-                };
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'koinly-exporter-btn-group';
 
+                const downloadCsvBtn = document.createElement('button');
+                downloadCsvBtn.textContent = 'Download CSV';
+                downloadCsvBtn.onclick = () => handleDownload(wallet, 'csv', downloadCsvBtn);
+
+                const downloadJsonBtn = document.createElement('button');
+                downloadJsonBtn.textContent = 'Download JSON';
+                downloadJsonBtn.onclick = () => handleDownload(wallet, 'json', downloadJsonBtn);
+                
+                buttonGroup.appendChild(downloadCsvBtn);
+                buttonGroup.appendChild(downloadJsonBtn);
+                
                 listItem.appendChild(nameSpan);
-                listItem.appendChild(downloadBtn);
+                listItem.appendChild(buttonGroup);
                 listElement.appendChild(listItem);
             });
 
         } catch (error) {
-            console.error("Ein kritischer Fehler ist aufgetreten:", error);
-            listElement.innerHTML = '<li>Ein Fehler ist aufgetreten. Stellen Sie sicher, dass Sie bei Koinly eingeloggt sind und versuchen Sie es erneut.</li>';
+            console.error("A critical error occurred:", error);
+            listElement.innerHTML = '<li>An error occurred. Please ensure you are logged into Koinly and try again.</li>';
         }
     }
 
-    // Skript automatisch starten
+    // Start the script automatically
     startExporter();
 
 })();
