@@ -90,7 +90,7 @@
     };
     
 
-    const toCSVFile = (baseCurrency, transactions) => {  
+    const toCSVFile = (walletName, baseCurrency, transactions) => {  
    
         // Headings
         // Representing Koinly Spreadsheet (https://docs.google.com/spreadsheets/d/1dESkilY70aLlo18P3wqXR_PX1svNyAbkYiAk2tBPJng/edit#gid=0)
@@ -163,7 +163,7 @@
                 t.fee ? t.fee.currency.id : '',
                 t.fee ? t.fee.currency.type : '',
                 t.fee ? t.fee_value : '',
-                t.fee_value? baseCurrency : '',
+                t.fee && t.fee_value ? baseCurrency : '',
                 t.net_value,
                 t.net_value? baseCurrency : '',
                 t.gain,
