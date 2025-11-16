@@ -78,29 +78,29 @@
         return allPages.flatMap(it => it.transactions);
     }
     
-        /**
-         * Escaped ein einzelnes CSV-Feld gemäss RFC 4180.
-         * - Schliesst Felder in doppelte Anführungszeichen ein, wenn sie Kommas, Zeilenumbrüche oder doppelte Anführungszeichen enthalten.
-         * - Verdoppelt alle doppelten Anführungszeichen innerhalb des Feldes.
-         */
-        const escapeCSV = (field) => {
-            // Gibt einen leeren String für null oder undefined Werte zurück.
-            if (field === null || field === undefined) {
-                return '';
-            }
-            const str = String(field);
-
-            // Prüft, ob das Feld problematische Zeichen enthält.
-            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-                // Ersetzt jedes doppelte Anführungszeichen durch zwei doppelte Anführungszeichen.
-                const escapedStr = str.replace(/"/g, '""');
-                // Schliesst das gesamte Feld in doppelte Anführungszeichen ein.
-                return `"${escapedStr}"`;
-            }
-            
-            // Wenn keine problematischen Zeichen vorhanden sind, wird das Feld unverändert zurückgegeben.
-            return str;
-        };
+    /**
+     * Escaped ein einzelnes CSV-Feld gemäss RFC 4180.
+     * - Schliesst Felder in doppelte Anführungszeichen ein, wenn sie Kommas, Zeilenumbrüche oder doppelte Anführungszeichen enthalten.
+     * - Verdoppelt alle doppelten Anführungszeichen innerhalb des Feldes.
+     */
+    const escapeCSV = (field) => {
+        // Gibt einen leeren String für null oder undefined Werte zurück.
+        if (field === null || field === undefined) {
+            return '';
+        }
+        const str = String(field);
+        
+        // Prüft, ob das Feld problematische Zeichen enthält.
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+            // Ersetzt jedes doppelte Anführungszeichen durch zwei doppelte Anführungszeichen.
+            const escapedStr = str.replace(/"/g, '""');
+            // Schliesst das gesamte Feld in doppelte Anführungszeichen ein.
+            return `"${escapedStr}"`;
+        }
+        
+        // Wenn keine problematischen Zeichen vorhanden sind, wird das Feld unverändert zurückgegeben.
+        return str;
+    };
     
 
     const toCSVFile = (baseCurrency, transactions) => {  
@@ -176,7 +176,7 @@
                 t.fee ? t.fee.currency.id : '',
                 t.fee ? t.fee.currency.type : '',
                 t.fee ? t.fee_value : '',
-                t.fee_value? baseCurrency : '',
+                t.fee && t.fee_value ? baseCurrency : '',
                 t.net_value,
                 t.net_value? baseCurrency : '',
                 t.gain,
