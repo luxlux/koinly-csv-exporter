@@ -66,7 +66,7 @@
     };
 
 const toCSVFile = (walletName, baseCurrency, transactions) => {
-        const headings = ['From Wallet', 'F_Source', 'To Wallet', 'T_Source', 'Date', 'Ignored?', 'Ign. Reason', 'Sent Amount', 'Sent Currency', 'Sent Cost Basis', 'Sent Cost Basis Currency', 'Received Amount', 'Received Currency', 'Received Cost Basis', 'Received Cost Basis Currency', 'Fee Amount', 'Fee Currency', 'Fee Value (EUR)', 'Net Worth Amount', 'Net Worth Currency', 'Gain' , 'Gain Currency', 'Type', 'Label', 'Cost Basis Method', 'Manual?', 'Missing Rates?', 'Missing Cost Basis?', 'Description', 'TxHash'];
+        const headings = ['From Wallet', 'F_Source', 'To Wallet', 'T_Source', 'Date', 'Ignored?', 'Ign. Reason', 'Sent Amount', 'Sent Currency', 'Sent Currency ID','Sent Cost Basis', 'Sent Cost Basis Currency', 'Received Amount', 'Received Currency', 'Received Currency ID', 'Received Cost Basis', 'Received Cost Basis Currency', 'Received Cost Basis Currency ID', 'Fee Amount', 'Fee Currency', 'Fee Value (EUR)', 'Net Worth Amount', 'Net Worth Currency', 'Gain' , 'Gain Currency', 'Type', 'Label', 'Cost Basis Method', 'Manual?', 'Missing Rates?', 'Missing Cost Basis?', 'Description', 'TxHash'];
 
         /**
          * Escaped ein einzelnes CSV-Feld gemäss RFC 4180.
@@ -103,14 +103,17 @@ const toCSVFile = (walletName, baseCurrency, transactions) => {
                 t.ignored_reason ? t.ignored_reason : '',
                 t.from ? t.from.amount : '',
                 t.from ? t.from.currency.symbol : '',
+                t.from ? t.from.currency.id : '',
                 t.from ? t.from.cost_basis : '',
                 baseCurrency,
                 t.to ? t.to.amount : '',
                 t.to ? t.to.currency.symbol : '',
+                t.to ? t.to.currency.id : '',
                 t.to ? t.to.cost_basis : '',
                 baseCurrency,
                 t.fee ? t.fee.amount : '',
                 t.fee ? t.fee.currency.symbol : '',
+                t.fee ? t.fee.currency.id : '',
                 t.fee ? t.fee_value : '',
                 t.net_value,
                 baseCurrency,
