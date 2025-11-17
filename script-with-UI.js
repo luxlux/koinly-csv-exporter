@@ -97,7 +97,6 @@
     
     const toCSVFile = (fileName, baseCurrency, transactions) => {
         // Definiert jede Spalte mit ihrem Header und einer Funktion, um den Wert zu extrahieren.
-        // Dies verhindert Fehler durch unsortierte Spalten und verbessert die Lesbarkeit.
         const columnConfig = [
             { header: 'Date',                 getValue: (t) => t.date },
             { header: 'Transaction Type',     getValue: (t) => t.type },
@@ -124,8 +123,8 @@
             { header: 'Fee Cur',              getValue: (t) => t.fee ? t.fee.currency.symbol : '' },
             { header: 'Fee Cur ID',           getValue: (t) => t.fee ? t.fee.currency.id : '' },
             { header: 'Fee Cur Type',         getValue: (t) => t.fee ? t.fee.currency.type : '' },
-            { header: 'Fee Value',            getValue: (t) => (t.fee && t.fee_value != null) ? t.fee_value : '' }, // KORRIGIERT: Greift auf t.fee_value zu
-            { header: 'Fee Value Cur',        getValue: (t, bc) => (t.fee && t.fee_value != null) ? bc : '' },      // KORRIGIERT: Logik wie oben
+            { header: 'Fee Value',            getValue: (t) => (t.fee && t.fee_value != null) ? t.fee_value : '' },
+            { header: 'Fee Value Cur',        getValue: (t, bc) => (t.fee && t.fee_value != null) ? bc : '' },
             { header: 'Net Worth Amount',     getValue: (t) => t.net_value != null ? t.net_value : '' },
             { header: 'Net Worth Cur',        getValue: (t, bc) => t.net_value != null ? bc : '' },
             { header: 'Gain',                 getValue: (t) => t.gain != null ? t.gain : '' },
@@ -138,22 +137,49 @@
             { header: 'TxHash',               getValue: (t) => t.txhash },
         ];
 
-        // Erzeugt die Header-Zeile aus der Konfiguration
+        // Erzeugt die Header-Zeile
         const headings = columnConfig.map(c => c.header).join(',');
 
-        // Erzeugt die Datenzeilen basierend auf der Konfiguration
+        // Erzeugt die Datenzeilen
         const transactionRows = transactions.map(t => {
             const row = columnConfig.map(c => c.getValue(t, baseCurrency));
             return row.map(escapeCSV).join(',');
         });
 
-        const csv = [headings, ...transactionRows].join('\n');
+        // --- NEU: Sammelt alle einzigartigen Währungen und erstellt die JSON-Liste ---
+        const uniqueCurrencies = new Map();
+        for (const t of transactions) {
+            if (t.from?.currency) uniqueCurrencies.set(t.from.currency.id, t.from.currency);
+            if (t.to?.currency) uniqueCurrencies.set(t.to.currency.id, t.to.currency);
+            if (t.fee?.currency) uniqueCurrencies.set(t.fee.currency.id, t.fee.currency);
+        }
+
+        const currencyList = Array.from(uniqueCurrencies.values()).map(c => ({
+            id: c.id,
+            type: c.type,
+            symbol: c.symbol,
+            name: c.name,
+            icon: c.icon,
+            token_address: c.token_address,
+        }));
+        
+        const currencyJsonString = JSON.stringify(currencyList);
+
+        // Erstellt die letzte Zeile für die CSV-Datei
+        const currencyRowArray = new Array(columnConfig.length).fill('');
+        currencyRowArray[0] = 'Currency Data (JSON):';
+        currencyRowArray[1] = currencyJsonString;
+        const currencyRow = currencyRowArray.map(escapeCSV).join(',');
+        // --- Ende des neuen Teils ---
+
+        const csvContent = [headings, ...transactionRows, currencyRow].join('\n'); // Fügt die JSON-Zeile am Ende hinzu
         const hiddenElement = document.createElement('a');
-        hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+        hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csvContent);
         hiddenElement.target = '_blank';
         hiddenElement.download = `${fileName}.csv`;
         hiddenElement.click();
     };
+
 
     const toJSONFile = (fileName, transactions) => {
         const jsonString = JSON.stringify(transactions, null, 2);
